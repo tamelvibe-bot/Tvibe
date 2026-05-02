@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tvibe Test - Offline</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141c38;
+      --card: #1e254a;
+      --text: #e9f0ff;
+      --muted: #a3b1d9;
+      --accent: #6c63ff;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --border: #2a2f64;
+      --shadow: 0 6px 20px rgba(0,0,0,.25);
+    }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto; background: var(--bg); color: var(--text); }
+    .app { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    header { display:flex; align-items:center; justify-content:space-between; padding: 12px 8px 16px; border-bottom: 1px solid var(--border); }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo { width:42px; height:42px; border-radius:12px; background: linear-gradient(135deg, #6c63ff, #21c1b5); box-shadow: 0 6px 18px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; font-weight:800; color:white; }
+    h1{ font-size: 1.05rem; margin:0; }
+    .section { background: rgba(20,28,68,.9); border:1px solid var(--border); border-radius:12px; padding:12px; margin:14px 0; }
+    textarea, input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0e1240; color: #e9f0ff; }
+    button { padding: 10px 12px; border-radius: 8px; border: 1px solid #3b3f78; background: #2f2f6b; color:#fff; cursor:pointer; }
+    button.primary{ background: linear-gradient(135deg, #6c63ff, #21c1b5); border: none; }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card{ padding:12px; border-radius:12px; background: rgba(11,18,44,.8); border:1px solid var(--border); }
+    .panel-title{ font-weight:700; margin-bottom:6px; }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .muted{ color:var(--muted); font-size:.88rem; }
+    .list{ display:flex; flex-direction:column; gap:8px; }
+    .item{ display:flex; justify-content:space-between; padding:8px; border-radius:8px; border:1px solid var(--border); background: rgba(18,28,60,.5); }
+    .badge { padding:4px 8px; border-radius:999px; font-size:.75rem; border:1px solid #333; background:#1e2750; color:#e9f0ff; }
+    .note{ color:var(--muted); font-size:.88rem; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">T</div>
+        <div>
+          <div style="font-weight:700">Tvibe Test</div>
+          <div class="muted" style="font-size:12px">Offline test harness: schedule, debts, reminders, and JSON import</div>
+        </div>
+      </div>
+      <div class="badge">Offline-first</div>
+    </header>
+
+    <!-- Import / Starter -->
+    <section class="section" aria-label="Plan Import">
+      <div class="panel-title">Plan Import / Starter</div>
+      <p class="muted" style="margin:0 0 8px 0">Paste Plan JSON or load starter. This starter includes Axis and Moneyview debts plus a 0% charity backlog.</p>
+      <textarea id="planJson" rows="12" placeholder="Paste plan JSON here..."></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button onclick="importPlan()">Import</button>
+        <button onclick="exportPlan()">Export</button>
+        <button onclick="loadStarter()">Load Starter</button>
+      </div>
+      <div id="importStatus" class="muted" style="margin-top:6px"></div>
+    </section>
+
+    <!-- Week 1 Preview -->
+    <section class="section" aria-label="Week 1 preview">
+      <div class="panel-title">Week 1 Preview</div>
+      <p class="muted" style="margin:0 0 8px 0">Sun–Fri: two full sets. Saturday: oil bath + Shambhavi + chants only.</p>
+      <ul class="list" id="week1List"></ul>
+    </section>
+
+    <!-- Debts & backlog -->
+    <section class="section" aria-label="Debts & backlog">
+      <div class="panel-title">Debt Ledger</div>
+      <div id="debts" class="list"></div>
+      <div class="row" style="margin-top:6px;">
+        <span class="badge" id="axisLabel">Axis card: ₹36,000</span>
+        <span class="badge" id="moneyLabel">Moneyview EMI: ₹7,068</span>
+        <span class="badge" id="backlogLabel">Charity backlog: ₹0</span>
+      </div>
+    </section>
+
+    <!-- Reminders (test) -->
+    <section class="section" aria-label="Reminders">
+      <div class="panel-title">Reminders (test)</div>
+      <div class="row" style="margin-bottom:6px;">
+        <input type="time" id="remTime" />
+        <input id="remName" placeholder="Reminder name (e.g., Paal prep)" />
+        <button onclick="addReminder()">Add Reminder</button>
+      </div>
+      <div id="remindersList" class="list"></div>
+    </section>
+
+    <!-- Plan snapshot -->
+    <section class="section" aria-label="Plan snapshot">
+      <div class="panel-title">Current Plan Snapshot</div>
+      <pre id="planSnapshot" class="muted" style="white-space:pre-wrap; background:#0a1135; padding:10px; border-radius:8px; border:1px solid #333; max-height:260px; overflow:auto"></pre>
+    </section>
+
+    <p class="muted" style="text-align:center; margin-top:14px">
+      This is a test page. It stores data in localStorage and is offline-friendly for UX testing.
+    </p>
+  </div>
+
+  <script>
+    // Basic in-page model
+    let plan = null;
+    let reminders = [];
+
+    function loadStarter(){
+      plan = {
+        profile: { name: "Tam", wake: "03:30", bed: "22:00", weightKg:75, timezone:"Asia/Kolkata" },
+        yogaRotation: { weekly: { Sunday:"S1", Monday:"S2", Tuesday:"S3", Wednesday:"S1", Thursday:"S2", Friday:"S3", Saturday:"OIL_BATH" }, notes: { S1:"Full sequence with Surya Kriya + Surya Shakti", S2:"Remove SK/SS, add Angamardana", S3:"Remove Angamardana, add Yogasanas" , OIL_BATH:"Oil bath routine + chants + Shambhavi (Sat)"}},
+        scheduleBlocks: {
+          morningOilPulling:{start:"03:30", end:"04:00"},
+          sadhana:{start:"04:00", end:"07:00"},
+          cooking:{start:"07:00", end:"08:30"},
+          study1:{start:"08:30", end:"09:40"},
+          garden:{start:"09:40", end:"09:50"},
+          commute:{start:"09:50", end:"10:00"},
+          workAM:{start:"10:00", end:"13:30"},
+          break:{start:"13:30", end:"14:00"},
+          workPM:{start:"14:00", end:"18:00"},
+          dinner:{start:"18:00", end:"19:30"},
+          chores:{start:"19:30", end:"20:00"},
+          study2:{start:"20:00", end:"21:30"},
+          nightRoutine:{start:"21:30", end:"22:00"}
+        },
+        food: {
+          breakfastTemplates: { optionA:"Cook/steam: dal-based or eggs, plus fruit", optionB:"Seafood on Sundays" },
+          paalRotation: ["Moong","Chana","Kambu/Sesame","Mixed"],
+          dinnerRotation: {
+            Sunday:"Curd + papaya + coconut",
+            Monday:"Curd + banana + papaya + coconut",
+            Tuesday:"Curd + guava + orange + coconut",
+            Wednesday:"Curd + apple + pomegranate + coconut",
+            Thursday:"Curd + papaya + dates + coconut",
+            Friday:"Curd + melon + guava + coconut",
+            Saturday:"Curd + banana + apple + coconut"
+          },
+          teaRotation: {
+            Sunday:"Plain green tea",
+            Monday:"Green tea + ginger",
+            Tuesday:"Green tea + tulsi",
+            Wednesday:"Green tea + ginger",
+            Thursday:"Green tea + tulsi",
+            Friday:"Green tea + lemon",
+            Saturday:"Plain green tea"
+          }
+        },
+        garden: { wateringDays:["Mon","Wed","Fri","Sun"], refillDay:"Sun" },
+        nightOilRotation: { oils:["Sesame","Coconut","Ghee","Castor"] },
+        finance: {
+          salary: 65000,
+          fixedExpenses: 21000,
+          safetyBuffer: 5000,
+          debts: [
+            { name: "Axis card", type: "payable", amount: 36000, due: "", locked: true },
+            { name: "Moneyview EMI", type: "payable", amount: 7068, due: "", locked: true }
+          ],
+          charityBacklog: { amount: 0, notes:"backlog 0%" }
+        }
+      };
+      localStorage.setItem('tvibe_plan', JSON.stringify(plan, null, 2));
+      renderPlan();
+    }
+
+    function renderPlan(){
+      const raw = localStorage.getItem('tvibe_plan');
+      if(raw){ plan = JSON.parse(raw); }
+      document.getElementById('planSnapshot').textContent = JSON.stringify(plan, null, 2);
+      // debts
+      const axis = plan?.finance?.debts?.find(d=>d.name.includes('Axis'))?.amount ?? 0;
+      const money = plan?.finance?.debts?.find(d=>d.name.includes('Moneyview'))?.amount ?? 0;
+      document.getElementById('axisLabel').textContent = 'Axis card: ₹' + axis.toLocaleString('en-IN');
+      document.getElementById('moneyLabel').textContent = 'Moneyview EMI: ₹' + money.toLocaleString('en-IN');
+      document.getElementById('backlogLabel').textContent = 'Charity backlog: ₹' + (plan?.finance?.charityBacklog?.amount ?? 0);
+      // week preview
+      const list = document.getElementById('week1List'); list.innerHTML = '';
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      days.forEach(d=>{
+        const set = (d==='Sunday')? 'S1' : (d==='Monday'?'S2': (d==='Tuesday'?'S3': (d==='Wednesday'?'S1': (d==='Thursday'?'S2': (d==='Friday'?'S3':'OIL_BATH')))));
+        const li = document.createElement('li'); li.textContent = d + ': ' + set; list.appendChild(li);
+      });
+    }
+
+    function importPlan(){
+      try {
+        const t = document.getElementById('planJson').value;
+        const obj = JSON.parse(t);
+        plan = obj;
+        localStorage.setItem('tvibe_plan', JSON.stringify(plan, null, 2));
+        renderPlan();
+        document.getElementById('importStatus').textContent = "Plan imported";
+      } catch(e){
+        document.getElementById('importStatus').textContent = "Import failed: " + e.message;
+      }
+    }
+
+    function exportPlan(){
+      const blob = new Blob([JSON.stringify(plan, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'tvibe_plan.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Init
+    window.addEventListener('load', ()=>{ loadStarter(); renderPlan(); });
+    // End
+  </script>
+</body>
+</html>
